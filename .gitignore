@@ -1,0 +1,7 @@
+__pycache__/
+*.pyc
+python-embed/
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
