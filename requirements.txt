@@ -1,0 +1,2 @@
+# No third-party packages are needed.
+# The web interface uses only the Python standard library (Python 3.9+).
