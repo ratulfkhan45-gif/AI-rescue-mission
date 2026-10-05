@@ -31,3 +31,15 @@ def search(grid: RoadNetwork, start: Position, goal: Position) -> SearchResult:
     explored_set = set()
     explored_order = []
     found = False
+
+    while frontier:
+        _, _, current = heapq.heappop(frontier)
+
+        if current in explored_set:
+            continue
+        explored_set.add(current)
+        explored_order.append(current)
+
+        if current == goal:
+            found = True
+            break
