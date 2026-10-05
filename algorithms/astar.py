@@ -51,3 +51,18 @@ def search(grid: RoadNetwork, start: Position, goal: Position) -> SearchResult:
                 came_from[neighbor] = current
                 f_score = tentative_g + straight_line(grid, neighbor, goal)
                 heapq.heappush(frontier, (f_score, next(tie_breaker), neighbor))
+
+    runtime_ms = (time.perf_counter() - start_time) * 1000.0
+
+    path = reconstruct_path(came_from, start, goal) if found else []
+    cost = path_cost(grid, path) if found else 0.0
+
+    return SearchResult(
+        algorithm="A*",
+        found=found,
+        path=path,
+        explored_order=explored_order,
+        nodes_explored=len(explored_order),
+        path_cost=cost,
+        runtime_ms=runtime_ms,
+    )
