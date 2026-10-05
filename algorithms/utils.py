@@ -39,3 +39,8 @@ def path_cost(network: RoadNetwork, path: List[Position]) -> float:
 def path_length_km(network: RoadNetwork, path: List[Position]) -> float:
     """Physical driving distance along a path in km (no flood penalty)."""
     return sum(network.road(u, v).length_km for u, v in zip(path, path[1:]))
+
+
+def straight_line(network: RoadNetwork, a: Position, b: Position) -> float:
+    """Heuristic h(n): haversine straight-line distance in km."""
+    return network.heuristic(a, b)
