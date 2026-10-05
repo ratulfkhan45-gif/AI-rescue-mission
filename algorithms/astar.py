@@ -43,3 +43,11 @@ def search(grid: RoadNetwork, start: Position, goal: Position) -> SearchResult:
         if current == goal:
             found = True
             break
+
+        for neighbor in grid.neighbors(current):
+            tentative_g = g_score[current] + grid.edge_cost(current, neighbor)
+            if neighbor not in g_score or tentative_g < g_score[neighbor]:
+                g_score[neighbor] = tentative_g
+                came_from[neighbor] = current
+                f_score = tentative_g + straight_line(grid, neighbor, goal)
+                heapq.heappush(frontier, (f_score, next(tie_breaker), neighbor))
