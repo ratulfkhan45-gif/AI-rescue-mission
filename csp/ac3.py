@@ -44,3 +44,21 @@ def _revise(domains: Domains, xi: str, xj: str) -> Tuple[bool, List[str]]:
         domains[xi] = new_domain
         return True, removed
     return False, removed
+
+
+def run_ac3(domains: Domains, victim_ids: List[str]):
+    """Runs AC-3 over all pairs of victims. Returns:
+        (success, domains, log)
+    success is False only if some domain becomes empty (no valid value
+    remains for that victim - an unsolvable CSP as constrained).
+    log is a list of human-readable strings describing each pruning
+    step, useful for the GUI to display genuine AC-3 activity."""
+    domains = {vid: list(vals) for vid, vals in domains.items()}
+    log: List[str] = []
+
+    # Build all directed arcs between victim pairs.
+    arcs = deque()
+    for xi in victim_ids:
+        for xj in victim_ids:
+            if xi != xj:
+                arcs.append((xi, xj))
