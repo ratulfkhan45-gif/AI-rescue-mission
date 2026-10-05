@@ -62,3 +62,18 @@ def run_ac3(domains: Domains, victim_ids: List[str]):
         for xj in victim_ids:
             if xi != xj:
                 arcs.append((xi, xj))
+
+    while arcs:
+        xi, xj = arcs.popleft()
+        changed, removed = _revise(domains, xi, xj)
+        if changed:
+            log.append(
+                f"AC-3: removed {removed} from domain of {xi} "
+                f"(no longer consistent with {xj} = {domains[xj]})"
+            )
+            if not domains[xi]:
+                log.append(f"AC-3: domain of {xi} became EMPTY - no solution possible.")
+                return False, domains, log
+            for xk in victim_ids:
+                if xk != xi and xk != xj:
+                    arcs.append((xk, xi))
