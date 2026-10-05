@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>AI Rescue Mission</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600&family=Barlow+Condensed:wght@500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="vendor/leaflet/leaflet.css">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <!-- Full-page map; everything else floats on top as glass panels -->
+  <div id="map" class="map" aria-label="Disaster zone map"></div>
+
+  <header class="glass topbar">
+    <div class="brand">
+      <h1>AI Rescue Mission</h1>
+      <p>Flood response on the road network of Old Dhaka and Keraniganj</p>
+    </div>
+    <p id="status" class="status" role="status" aria-live="polite">Loading the disaster zone…</p>
+  </header>
+
+  <p class="map-note" id="mapNote" hidden></p>
+
+  <div class="glass map-tools">
+    <label class="switch small">
+      <input type="checkbox" id="tilesToggle" checked>
+      <span>Map background</span>
+    </label>
+    <button type="button" class="btn btn-quiet" id="btnSat" aria-pressed="false">Satellite view</button>
+    <button type="button" class="btn btn-quiet" id="btnFit">Fit map</button>
+    <button type="button" class="btn btn-quiet" id="btnPanel" aria-expanded="true" aria-controls="panel">Hide panel</button>
+  </div>
+
+  <details class="glass legend-box" open>
+    <summary>Legend</summary>
+    <ul class="legend" aria-label="Map legend">
+      <li><span class="sw sw-vehicle"></span>Rescue vehicle (Fire Service HQ)</li>
+      <li><span class="sw sw-hospital"></span>Hospital</li>
+      <li><span class="sw sw-victim"></span>Victim</li>
+      <li><span class="sw sw-victim-sel"></span>Selected victim</li>
+      <li><span class="sw sw-amb">A</span>Ambulance</li>
+      <li><span class="sw sw-med">M</span>Medical team</li>
+      <li><span class="ln ln-open"></span>Open road</li>
+      <li><span class="ln ln-flooded"></span>Flooded road (cost ×3)</li>
+      <li><span class="ln ln-blocked"></span>Blocked road</li>
+      <li><span class="sw sw-explored"></span>Explored intersection</li>
+      <li><span class="ln ln-path"></span>Final route</li>
+    </ul>
+  </details>
+
+  <main class="layout">
+    <!-- ================= CONTROLS ================= -->
+    <aside class="glass panel" id="panel">
+
+      <section class="block" aria-labelledby="h-route">
+        <h2 id="h-route">Plan a route</h2>
+
+        <p class="field-label" id="lbl-alg">Algorithm</p>
+        <div class="segmented" role="radiogroup" aria-labelledby="lbl-alg" id="algGroup">
+          <button type="button" role="radio" data-alg="BFS">BFS</button>
+          <button type="button" role="radio" data-alg="A*">A*</button>
+        </div>
+        <p class="hint" id="algHint"></p>
+
+        <p class="field-label" id="lbl-victim">Victim</p>
+        <div class="victims" role="radiogroup" aria-labelledby="lbl-victim" id="victimGroup"></div>
+
+        <div class="actions">
+          <button type="button" class="btn btn-primary" id="btnRoute">Find rescue route</button>
+          <button type="button" class="btn" id="btnCompare">Compare all algorithms</button>
+        </div>
+
+        <div class="inline-row">
+          <label class="speed">
+            Animation speed
+            <select id="speed">
+              <option value="6">Fast</option>
+              <option value="16" selected>Normal</option>
+              <option value="40">Slow</option>
+            </select>
+          </label>
+          <button type="button" class="btn btn-quiet" id="btnSkip" hidden>Skip animation</button>
+          <button type="button" class="btn btn-quiet" id="btnClearView">Clear route</button>
+        </div>
+      </section>
+
+      <section class="block" aria-labelledby="h-results">
+        <h2 id="h-results">Results</h2>
+        <div id="lastRun" class="last-run empty">Run a search to see nodes explored, distance, cost and runtime.</div>
+
+        <table class="compare" aria-label="Algorithm comparison">
+          <thead>
+            <tr><th scope="col">Algorithm</th><th scope="col">Nodes</th><th scope="col">Distance</th><th scope="col">Cost</th><th scope="col">Runtime</th></tr>
+          </thead>
+          <tbody id="compareBody"></tbody>
+        </table>
+        <p class="hint" id="compareNote"></p>
+      </section>
+
+      <section class="block" aria-labelledby="h-sim">
+        <h2 id="h-sim">Resource dispatch</h2>
+        <p class="hint">Unassigned ambulances and medical teams move to a random intersection on their side of the river every 3 seconds, and only drive on open roads. Each victim takes its nearest match; AC-3 and backtracking only step in when victims compete for the same unit.</p>
+        <button type="button" class="btn btn-dispatch" id="btnSim">Start simulation</button>
+        <ul class="assignments" id="assignments"></ul>
+        <ol class="sim-log" id="simLog" aria-label="Simulation log"></ol>
+      </section>
+
+      <section class="block" aria-labelledby="h-edit">
+        <h2 id="h-edit">Edit the roads</h2>
+        <label class="switch">
+          <input type="checkbox" id="editToggle">
+          <span>Edit mode</span>
+        </label>
+        <div class="tools" role="radiogroup" aria-label="Road tool" id="toolGroup">
+          <button type="button" role="radio" data-tool="FLOODED"><span class="ln ln-flooded"></span>Flood</button>
+          <button type="button" role="radio" data-tool="BLOCKED"><span class="ln ln-blocked"></span>Block</button>
+          <button type="button" role="radio" data-tool="OPEN"><span class="ln ln-open"></span>Reopen</button>
+        </div>
+        <p class="hint">With edit mode on, click a road to apply the tool (click again to reopen it), or drag a victim onto another intersection.</p>
+        <div class="inline-row">
+          <button type="button" class="btn btn-quiet" id="btnClearObs">Reopen all roads</button>
+          <button type="button" class="btn btn-quiet" id="btnRestore">Restore default scenario</button>
+        </div>
+      </section>
+    </aside>
+  </main>
+
+  <script src="vendor/leaflet/leaflet.js"></script>
+  <script src="app.js"></script>
+  <script>
+    document.getElementById("btnPanel").addEventListener("click", function () {
+      const hidden = document.body.classList.toggle("panel-hidden");
+      this.textContent = hidden ? "Show panel" : "Hide panel";
+      this.setAttribute("aria-expanded", String(!hidden));
+    });
+  </script>
+</body>
+</html>
