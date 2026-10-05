@@ -25,3 +25,22 @@ from collections import deque
 from typing import Dict, List, Tuple
 
 Domains = Dict[str, List[str]]
+
+
+def _revise(domains: Domains, xi: str, xj: str) -> Tuple[bool, List[str]]:
+    """Remove values from Domain(xi) that have no consistent support in
+    Domain(xj). Returns (changed, removed_values)."""
+    removed = []
+    new_domain = []
+    for x in domains[xi]:
+        # x is supported if there exists some y in Domain(xj), y != x
+        has_support = any(y != x for y in domains[xj])
+        if has_support:
+            new_domain.append(x)
+        else:
+            removed.append(x)
+
+    if removed:
+        domains[xi] = new_domain
+        return True, removed
+    return False, removed
