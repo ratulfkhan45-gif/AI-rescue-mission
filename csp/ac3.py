@@ -77,3 +77,8 @@ def run_ac3(domains: Domains, victim_ids: List[str]):
             for xk in victim_ids:
                 if xk != xi and xk != xj:
                     arcs.append((xk, xi))
+
+    if not log:
+        log.append("AC-3: no domain changes were necessary (already arc-consistent).")
+
+    return True, domains, log
